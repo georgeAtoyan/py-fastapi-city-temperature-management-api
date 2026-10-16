@@ -1,60 +1,132 @@
-## Task Description
+# City Temperature Management API
 
-You are required to create a FastAPI application that manages city data and their corresponding temperature data. The application will have two main components (apps):
+A REST API built with **FastAPI**, **SQLAlchemy**, and **SQLite** for managing cities and recording their temperatures.
 
-1. A CRUD (Create, Read, Update, Delete) API for managing city data.
-2. An API that fetches current temperature data for all cities in the database and stores this data in the database. This API should also provide a list endpoint to retrieve the history of all temperature data.
+## Features
 
-### Part 1: City CRUD API
+- Create, retrieve, update, and delete cities.
+- Record temperatures associated with existing cities.
+- Retrieve temperature records and filter them by city.
+- Validate request data using Pydantic.
+- Support pagination for list endpoints, if enabled.
 
-1. Create a new FastAPI application.
-2. Define a Pydantic model `City` with the following fields:
-    - `id`: a unique identifier for the city.
-    - `name`: the name of the city.
-    - `additional_info`: any additional information about the city.
-3. Implement a SQLite database using SQLAlchemy and create a corresponding `City` table.
-4. Implement the following endpoints:
-    - `POST /cities`: Create a new city.
-    - `GET /cities`: Get a list of all cities.
-    - **Optional**: `GET /cities/{city_id}`: Get the details of a specific city.
-    - **Optional**: `PUT /cities/{city_id}`: Update the details of a specific city.
-    - `DELETE /cities/{city_id}`: Delete a specific city.
+## Technologies
 
-### Part 2: Temperature API
+- Python 3.13+
+- FastAPI
+- SQLAlchemy with asynchronous database operations
+- SQLite
+- aiosqlite
+- Pydantic
+- Uvicorn
 
-1. Define a Pydantic model `Temperature` with the following fields:
-    - `id`: a unique identifier for the temperature record.
-    - `city_id`: a reference to the city.
-    - `date_time`: the date and time when the temperature was recorded.
-    - `temperature`: the recorded temperature.
-2. Create a corresponding `Temperature` table in the database.
-3. Implement an endpoint `POST /temperatures/update` that fetches the current temperature for all cities in the database from an online resource of your choice. Store this data in the `Temperature` table. You should use an async function to fetch the temperature data.
-4. Implement the following endpoints:
-    - `GET /temperatures`: Get a list of all temperature records.
-    - `GET /temperatures/?city_id={city_id}`: Get the temperature records for a specific city.
+## Getting Started
 
-### Additional Requirements
+### 1. Clone the repository
 
-- Use dependency injection where appropriate.
-- Organize your project according to the FastAPI project structure guidelines.
+```bash
+git clone <repository-url>
+cd py-fastapi-city-temperature-management-api
+```
 
-## Evaluation Criteria
+Replace `<repository-url>` with your repository's URL.
 
-Your task will be evaluated based on the following criteria:
+### 2. Create a virtual environment
 
-- Functionality: Your application should meet all the requirements outlined above.
-- Code Quality: Your code should be clean, readable, and well-organized.
-- Error Handling: Your application should handle potential errors gracefully.
-- Documentation: Your code should be well-documented (README.md).
+**Windows (PowerShell):**
 
-## Deliverables
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
 
-Please submit the following:
+**Linux/macOS:**
 
-- The complete source code of your application.
-- A README file that includes:
-    - Instructions on how to run your application.
-    - A brief explanation of your design choices.
-    - Any assumptions or simplifications you made.
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
 
-Good luck!
+### 3. Install dependencies
+
+If the project contains a `requirements.txt` file:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+Otherwise, install the required packages:
+
+```bash
+python -m pip install fastapi "uvicorn[standard]" sqlalchemy aiosqlite
+```
+
+### 4. Run the application
+
+From the project root directory, run:
+
+```bash
+python -m uvicorn app.main:app --reload
+```
+
+The API will be available at:
+
+- API base URL: http://127.0.0.1:8000
+- Interactive Swagger documentation: http://127.0.0.1:8000/docs
+- ReDoc documentation: http://127.0.0.1:8000/redoc
+
+Use Swagger UI to explore the endpoints and send requests.
+
+### 5. Database initialization
+
+The application uses SQLite and stores its data in `city_temperature.db`.
+
+Database tables are created during application startup using SQLAlchemy metadata, provided the models have been imported and registered correctly.
+
+If the database file does not exist, SQLite can create it when the application first connects. The application startup process creates the required tables.
+
+## Design Choices
+
+### FastAPI for the API layer
+
+FastAPI provides request handling, dependency injection, input validation integration, and automatic API documentation.
+
+### Pydantic schemas for validation
+
+Pydantic schemas define the expected request and response structures. Separate schemas for creating, updating, and returning cities help distinguish client-provided data from database-generated fields.
+
+### SQLAlchemy ORM for database operations
+
+SQLAlchemy models represent database tables as Python classes. The ORM allows database records to be created and modified using Python objects instead of writing SQL statements for every operation.
+
+### Asynchronous database access
+
+The application uses SQLAlchemy's asynchronous engine and `AsyncSession` to perform database operations without blocking the event loop while waiting for database I/O.
+
+### Separation of responsibilities
+
+The application separates its main responsibilities into modules:
+
+- `app/main.py` initializes the FastAPI application and registers routers.
+- `routers/` defines API endpoints and handles HTTP-level behavior.
+- `app/schemas.py` defines data validation and serialization.
+- `app/models.py` defines database models and relationships.
+- `app/database.py` configures the engine, session factory, and database dependency.
+- `crud.py` contains database operations.
+
+This organization improves readability, maintainability, and testability.
+
+### SQLite for persistence
+
+SQLite provides a lightweight database that is easy to configure for local development and learning without requiring a separate database server.
+
+## Assumptions and Simplifications
+
+- Each temperature record belongs to an existing city.
+- The API validates that a referenced city exists before creating a temperature record.
+- City names are required and must not be empty.
+- Temperature values are accepted as numeric values; additional business rules, such as acceptable minimum and maximum temperatures, are not enforced unless implemented separately.
+- Authentication and authorization are outside the scope of this project.
+- SQLite is intended for local development and demonstration rather than as a recommendation for every production deployment.
+- Database schema migrations are not included; tables are initialized using SQLAlchemy metadata.
+- Error handling covers expected cases, such as requests referencing nonexistent cities. More comprehensive logging and centralized exception handling could be added later.
