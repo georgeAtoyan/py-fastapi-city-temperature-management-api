@@ -28,9 +28,9 @@ async def update_temperatures(db: DBDep):
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=str(exc),
-        ) from exec
+        ) from exc
     except httpx.HTTPError as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Failed to fetch weather data",
-        ) from exec
+        ) from exc
