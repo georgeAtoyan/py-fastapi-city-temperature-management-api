@@ -1,4 +1,5 @@
 from app import models, schemas
+from app.weather import fetch_temperature
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -12,6 +13,10 @@ async def create_city(session: AsyncSession, city: schemas.CityCreate):
 
 async def get_cities(session: AsyncSession, skip: int = 0, limit: int = 5):
     result = await session.scalars(select(models.City).offset(skip).limit(limit))
+    return result.all()
+
+async def get_all_cities(session: AsyncSession):
+    result = await session.scalars(select(models.City))
     return result.all()
 
 async def get_city_by_id(session: AsyncSession, city_id: int):
@@ -72,3 +77,28 @@ async def get_temperatures(session: AsyncSession, skip: int = 0, limit: int = 5)
 async def get_temperature_by_city_id(session: AsyncSession, city_id: int):
     result = await session.scalars(select(models.Temperature).where(models.Temperature.city_id == city_id))
     return result.all()
+
+async def update_all_temperatures(session: AsyncSession):
+    cities = await get_all_cities(session)
+
+    if not cities:
+        return []
+
+    temperatures = []
+
+    for city in cities:
+        current_temperature = await fetch_temperature(city.name)
+
+        db_temperature = models.Temperature(
+            city_id=city.id,
+            temperature=current_temperature,
+        )
+        session.add(db_temperature)
+        temperatures.append(db_temperature)
+
+    await session.commit()
+
+    for temperature in temperatures:
+        await session.refresh(temperature)
+
+    return temperatures

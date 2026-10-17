@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import schemas
 from app.database import get_db
 import crud
+import httpx
 
 router = APIRouter(tags=["temperature"])
 DBDep = Annotated[AsyncSession, Depends(get_db)]
@@ -19,12 +20,17 @@ async def get_temperatures(db: DBDep):
 async def get_temperature_by_city_id(city_id: int, db: DBDep):
     return await crud.get_temperature_by_city_id(db, city_id)
 
-@router.post("/temperatures/update", response_model=schemas.TemperatureResponse, status_code=status.HTTP_201_CREATED)
-async def add_temperature(data: schemas.TemperatureCreate, db: DBDep):
+@router.post("/temperatures/update", response_model=list[schemas.TemperatureResponse], status_code=status.HTTP_200_OK)
+async def update_temperatures(db: DBDep):
     try:
-        return await crud.add_temperature(db, data)
-    except ValueError as e:
+        return await crud.update_all_temperatures(db)
+    except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e)
-        )
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(exc),
+        ) from exec
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Failed to fetch weather data",
+        ) from exc

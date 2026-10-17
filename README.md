@@ -1,132 +1,74 @@
 # City Temperature Management API
 
-A REST API built with **FastAPI**, **SQLAlchemy**, and **SQLite** for managing cities and recording their temperatures.
+A REST API built with FastAPI, SQLAlchemy, and SQLite for managing cities and collecting current temperatures from an online weather service.
 
-## Features
-
-- Create, retrieve, update, and delete cities.
-- Record temperatures associated with existing cities.
-- Retrieve temperature records and filter them by city.
-- Validate request data using Pydantic.
-- Support pagination for list endpoints, if enabled.
-
-## Technologies
+## Requirements
 
 - Python 3.13+
 - FastAPI
-- SQLAlchemy with asynchronous database operations
-- SQLite
-- aiosqlite
-- Pydantic
 - Uvicorn
+- SQLAlchemy
+- aiosqlite
+- httpx
 
-## Getting Started
+## Running the application
 
-### 1. Clone the repository
+### 1. Create and activate a virtual environment
 
-```bash
-git clone <repository-url>
-cd py-fastapi-city-temperature-management-api
-```
-
-Replace `<repository-url>` with your repository's URL.
-
-### 2. Create a virtual environment
-
-**Windows (PowerShell):**
+Windows PowerShell:
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
-**Linux/macOS:**
+### 2. Install dependencies
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-```
-
-### 3. Install dependencies
-
-If the project contains a `requirements.txt` file:
-
-```bash
+```powershell
 python -m pip install -r requirements.txt
 ```
 
-Otherwise, install the required packages:
+### 3. Start the application
 
-```bash
-python -m pip install fastapi "uvicorn[standard]" sqlalchemy aiosqlite
-```
+Run this command from the project root:
 
-### 4. Run the application
-
-From the project root directory, run:
-
-```bash
+```powershell
 python -m uvicorn app.main:app --reload
 ```
 
-The API will be available at:
+### 4. Open the API documentation
 
-- API base URL: http://127.0.0.1:8000
-- Interactive Swagger documentation: http://127.0.0.1:8000/docs
-- ReDoc documentation: http://127.0.0.1:8000/redoc
+Visit http://127.0.0.1:8000/docs to explore and test the endpoints.
 
-Use Swagger UI to explore the endpoints and send requests.
+## Design choices
 
-### 5. Database initialization
+- **FastAPI** provides HTTP routing, request handling, dependency injection, and automatic API documentation.
+- **Pydantic** validates request data and defines response structures.
+- **SQLAlchemy** manages database models and asynchronous database operations.
+- **SQLite** provides lightweight persistent storage without requiring a separate database server.
+- **httpx** performs asynchronous HTTP requests to an external weather service.
+- **Separation of responsibilities** keeps routes, schemas, database models, database configuration, and CRUD operations in separate modules.
 
-The application uses SQLite and stores its data in `city_temperature.db`.
+## Temperature updates
 
-Database tables are created during application startup using SQLAlchemy metadata, provided the models have been imported and registered correctly.
+The `POST /temperatures/update` endpoint retrieves all cities stored in the database, fetches current weather data for each city from Open-Meteo, saves a temperature record for each successful update, and returns the resulting records.
 
-If the database file does not exist, SQLite can create it when the application first connects. The application startup process creates the required tables.
+The weather integration uses city-name geocoding to obtain latitude and longitude before requesting current temperature data.
 
-## Design Choices
+## Assumptions and simplifications
 
-### FastAPI for the API layer
+- Every city is identified by its stored name and is geocoded when weather data is requested.
+- City names are assumed to identify the intended location unambiguously. Cities with identical names in different countries may require additional location fields.
+- Temperature updates are performed sequentially to keep the implementation simple.
+- Weather data availability depends on the external provider and network connectivity.
+- The application does not require an API key for the selected Open-Meteo endpoints under their applicable usage terms.
+- Authentication, authorization, automated retries, scheduled updates, and database migrations are outside the current scope.
+- SQLite is used for local development and demonstration purposes.
 
-FastAPI provides request handling, dependency injection, input validation integration, and automatic API documentation.
+## Future improvements
 
-### Pydantic schemas for validation
-
-Pydantic schemas define the expected request and response structures. Separate schemas for creating, updating, and returning cities help distinguish client-provided data from database-generated fields.
-
-### SQLAlchemy ORM for database operations
-
-SQLAlchemy models represent database tables as Python classes. The ORM allows database records to be created and modified using Python objects instead of writing SQL statements for every operation.
-
-### Asynchronous database access
-
-The application uses SQLAlchemy's asynchronous engine and `AsyncSession` to perform database operations without blocking the event loop while waiting for database I/O.
-
-### Separation of responsibilities
-
-The application separates its main responsibilities into modules:
-
-- `app/main.py` initializes the FastAPI application and registers routers.
-- `routers/` defines API endpoints and handles HTTP-level behavior.
-- `app/schemas.py` defines data validation and serialization.
-- `app/models.py` defines database models and relationships.
-- `app/database.py` configures the engine, session factory, and database dependency.
-- `crud.py` contains database operations.
-
-This organization improves readability, maintainability, and testability.
-
-### SQLite for persistence
-
-SQLite provides a lightweight database that is easy to configure for local development and learning without requiring a separate database server.
-
-## Assumptions and Simplifications
-
-- Each temperature record belongs to an existing city.
-- The API validates that a referenced city exists before creating a temperature record.
-- City names are required and must not be empty.
-- Temperature values are accepted as numeric values; additional business rules, such as acceptable minimum and maximum temperatures, are not enforced unless implemented separately.
-- Authentication and authorization are outside the scope of this project.
-- SQLite is intended for local development and demonstration rather than as a recommendation for every production deployment.
-- Database schema migrations are not included; tables are initialized using SQLAlchemy metadata.
-- Error handling covers expected cases, such as requests referencing nonexistent cities. More comprehensive logging and centralized exception handling could be added later.
+- Store city coordinates to avoid repeated geocoding.
+- Fetch weather data concurrently with sensible limits.
+- Add automated tests for API endpoints and weather failures.
+- Introduce logging, retry handling, and clearer reporting for partial failures.
+- Use Alembic for database migrations.
